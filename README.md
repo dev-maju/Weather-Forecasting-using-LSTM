@@ -75,29 +75,42 @@ weather-lstm-forecasting/
 │
 ├── data/
 │   ├── raw/
+│   │   └── noaa/
+│   │       ├── kochi_2020.csv
+│   │       ├── kochi_2021.csv
+│   │       ├── kochi_2022.csv
+│   │       ├── kochi_2023.csv
+│   │       ├── kochi_2024.csv
+│   │       └── kochi_2025.csv
+│   │
 │   └── processed/
-│
-├── notebooks/
-│   ├── 01_data_exploration.ipynb
-│   ├── 02_preprocessing.ipynb
-│   └── 03_lstm_training.ipynb
-│
-├── src/
-│   ├── dataset_builder.py
-│   ├── model.py
-│   ├── rolling_predictor.py
-│   ├── api.py
-│   └── noaa_fetcher.py
+│       └── kochi_weather_scaled.csv
 │
 ├── models/
 │   ├── kochi_lstm_next_hour_multivariate.keras
 │   └── weather_scaler.pkl
 │
+├── notebooks/
+│   ├── 01_data_exploration.ipynb
+│   ├── 02_preprocessing.ipynb
+│   ├── 03_lstm_training.ipynb
+│   ├── 04_error_analysis.ipynb
+│   ├── 05_classical_ml_baselines.ipynb
+│   └── 06_model_comparison_and_error_analysis.ipynb
+│
 ├── results/
 │   ├── plots/
-│   └── metrics/
+│   │   ├── loss_curve.png
+│   │   ├── prediction_vs_actual.png
+│   │   └── error_by_hour.png
+│   │
+│   └── prediction_log.csv
 │
-├── README.md
+├── src/
+│   ├── api.py
+│   ├── rolling_predictor.py
+│   └── noaa_fetcher.py   # optional / experimental
+│
 └── requirements.txt
 </pre>
 
