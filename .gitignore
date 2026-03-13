@@ -1,0 +1,15 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Firebase secret key
+firebase_key.json
+
+# Large model files
+*.keras
+*.h5
+*.pkl
+
+# OS
+.DS_Store

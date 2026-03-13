@@ -1,9 +1,17 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from pydantic import BaseModel
 import numpy as np
 import joblib
 import os
 from tensorflow.keras.models import load_model
+import firebase_admin
+from firebase_admin import credentials, db
+
+cred = credentials.Certificate("firebase_key.json")
+
+firebase_admin.initialize_app(cred, {
+    "databaseURL": "https://test1-a7529-default-rtdb.firebaseio.com/"
+})
 
 # -----------------------------
 # App initialization
@@ -11,7 +19,7 @@ from tensorflow.keras.models import load_model
 app = FastAPI(title="Weather Forecast API")
 
 # -----------------------------
-# BASE DIRECTORY (MUST BE FIRST)
+# BASE DIRECTORY
 # -----------------------------
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -39,44 +47,70 @@ scaler = joblib.load(SCALER_PATH)
 TIME_STEPS = 24
 NUM_FEATURES = 3
 
-# -----------------------------
-# Request schema
-# -----------------------------
-class WeatherRequest(BaseModel):
-    weather_window: list[list[float]]
+# Dummy history for first 23 hours
+weather_buffer = [[30,70,1005]] * 23
 
 # -----------------------------
-# Response schema
+# Request schema (ESP32 input)
 # -----------------------------
-class WeatherResponse(BaseModel):
+class WeatherReading(BaseModel):
     temperature: float
     humidity: float
     pressure: float
 
 # -----------------------------
-# Prediction endpoint
+# Sensor endpoint
 # -----------------------------
-@app.post("/predict", response_model=WeatherResponse)
-def predict(request: WeatherRequest):
+@app.post("/sensor")
+def receive_sensor(data: WeatherReading):
 
-    data = np.array(request.weather_window, dtype=np.float32)
+    global weather_buffer
 
-    if data.shape != (TIME_STEPS, NUM_FEATURES):
-        raise HTTPException(
-            status_code=400,
-            detail="Input must be of shape (24, 3)"
-        )
+    reading = [
+        data.temperature,
+        data.humidity,
+        data.pressure
+    ]
 
-    data = np.expand_dims(data, axis=0)
+    weather_buffer.append(reading)
 
-    prediction_scaled = model.predict(data)[0]
+    print("Received:", reading)
+    print("Buffer size:", len(weather_buffer))
+
+    # Wait until we have 24 readings
+    if len(weather_buffer) < TIME_STEPS:
+        return {"status": "collecting data"}
+
+    # Use last 24 readings
+    window = np.array(weather_buffer[-TIME_STEPS:], dtype=np.float32)
+
+    # scale input
+    window_scaled = scaler.transform(window)
+
+    window_scaled = np.expand_dims(window_scaled, axis=0)
+
+    prediction_scaled = model.predict(window_scaled)[0]
 
     dummy = np.zeros((1, NUM_FEATURES))
     dummy[0] = prediction_scaled
+
     prediction = scaler.inverse_transform(dummy)[0]
 
-    return {
-        "temperature": float(prediction[0]),
-        "humidity": float(prediction[1]),
-        "pressure": float(prediction[2]),
+    prediction_data = {
+    "temperature": float(prediction[0]),
+    "humidity": float(prediction[1]),
+    "pressure": float(prediction[2])
     }
+
+    db.reference("ESP32/prediction").set(prediction_data)
+
+    result = {
+        "pred_temperature": float(prediction[0]),
+        "pred_humidity": float(prediction[1]),
+        "pred_pressure": float(prediction[2])
+    }
+
+
+    print("Prediction:", result)
+
+    return result
