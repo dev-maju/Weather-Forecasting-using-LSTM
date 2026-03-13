@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Weather Station Dashboard</title>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<style>
+
+*{box-sizing:border-box;}
+
+body{
+margin:0;
+font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
+background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+color:#e0e6f1;
+min-height:100vh;
+display:flex;
+flex-direction:column;
+align-items:center;
+padding:2rem;
+}
+
+h1{
+font-weight:700;
+font-size:2.8rem;
+margin-bottom:2rem;
+letter-spacing:2px;
+text-shadow:0 2px 8px rgba(0,0,0,0.7);
+}
+
+.dashboard{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+gap:2rem;
+width:100%;
+max-width:960px;
+}
+
+.card{
+background:rgba(255,255,255,0.07);
+border-radius:16px;
+padding:1.8rem 2rem;
+box-shadow:0 4px 6px rgba(0,0,0,0.3), inset 0 0 10px rgba(255,255,255,0.1);
+display:flex;
+flex-direction:column;
+align-items:center;
+}
+
+.card h2{
+font-weight:600;
+font-size:1.8rem;
+margin-bottom:0.8rem;
+color:#f0f4ff;
+}
+
+.value{
+font-size:2.6rem;
+font-weight:700;
+color:#a9d6ff;
+letter-spacing:1.2px;
+}
+
+.unit{
+font-size:1.2rem;
+color:#7fb4ff;
+margin-left:6px;
+}
+
+.prediction{
+font-size:1rem;
+margin-top:10px;
+color:#ffd166;
+font-style:italic;
+}
+
+.status{
+margin-top:8px;
+font-size:1rem;
+color:#b3b3b3;
+}
+
+@media (max-width:480px){
+
+h1{font-size:2rem;}
+.value{font-size:2rem;}
+
+}
+
+</style>
+</head>
+
+<body>
+
+<h1>Weather Station Dashboard</h1>
+
+<div class="dashboard">
+
+<!-- TEMPERATURE -->
+
+<div class="card">
+<h2>Temperature</h2>
+
+<div>
+<span class="value" id="temperatureValue">--</span>
+<span class="unit">°C</span>
+</div>
+
+<div class="prediction">
+Predicted: <span id="predTemp">--</span> °C
+</div>
+
+</div>
+
+
+<!-- PRESSURE -->
+
+<div class="card">
+<h2>Pressure</h2>
+
+<div>
+<span class="value" id="pressureValue">--</span>
+<span class="unit">hPa</span>
+</div>
+
+<div class="prediction">
+Predicted: <span id="predPressure">--</span> hPa
+</div>
+
+</div>
+
+
+<!-- HUMIDITY -->
+
+<div class="card">
+<h2>Humidity</h2>
+
+<div>
+<span class="value" id="humidityValue">--</span>
+<span class="unit">%</span>
+</div>
+
+<div class="prediction">
+Predicted: <span id="predHumidity">--</span> %
+</div>
+
+</div>
+
+
+<!-- WATER LEVEL -->
+
+<div class="card">
+<h2>Water Level</h2>
+
+<div>
+<span class="value" id="waterLevelValue">--</span>
+<span class="unit">cm</span>
+</div>
+
+<div class="status" id="rainStatus">
+Rain: --
+</div>
+
+</div>
+
+</div>
+
+
+<script>
+
+/* ------------------ FIREBASE CONFIG ------------------ */
+
+const firebaseConfig = {
+
+apiKey: "AIzaSyC0tH-5g1wUJTR5X_3Jg3KzKfWimJRVCYo",
+authDomain: "test1-a7529.firebaseapp.com",
+projectId: "test1-a7529",
+databaseURL: "https://test1-a7529-default-rtdb.firebaseio.com/",
+storageBucket: "test1-a7529.firebasestorage.app",
+messagingSenderId: "990674318486",
+appId: "1:990674318486:web:61fafd09f1e0f01c737eb7",
+measurementId: "G-FR4WW6T2FB"
+
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+
+/* ------------------ CURRENT SENSOR DATA ------------------ */
+
+db.ref('ESP32').on('value',(snapshot)=>{
+
+const data=snapshot.val();
+if(!data)return;
+
+document.getElementById("temperatureValue").textContent =
+data.temperature?.toFixed(1) ?? "--";
+
+document.getElementById("pressureValue").textContent =
+data.pressure?.toFixed(1) ?? "--";
+
+document.getElementById("humidityValue").textContent =
+data.humidity?.toFixed(1) ?? "--";
+
+
+/* Rain status */
+
+if(data.rain_percent!==undefined){
+
+if(data.rain_percent>50)
+document.getElementById("rainStatus").textContent="Rain Detected";
+else
+document.getElementById("rainStatus").textContent="No Rain";
+
+}
+
+
+/* Water level */
+
+if(data.water_distance!==undefined){
+
+document.getElementById("waterLevelValue").textContent =
+data.water_distance.toFixed(1);
+
+}
+
+});
+
+
+/* ------------------ PREDICTION DATA ------------------ */
+
+db.ref('ESP32/prediction').on('value',(snapshot)=>{
+
+const pred=snapshot.val();
+if(!pred)return;
+
+document.getElementById("predTemp").textContent =
+pred.temperature.toFixed(1);
+
+document.getElementById("predHumidity").textContent =
+pred.humidity.toFixed(1);
+
+document.getElementById("predPressure").textContent =
+pred.pressure.toFixed(1);
+
+});
+
+</script>
+
+</body>
+</html>
